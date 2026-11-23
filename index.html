@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F4F0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Rumo às Metas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: uma coluna estreita (iPhone), cartões por meta, resumo antes do detalhe. */
+:root{
+  --bg:#F4F4F0; --surface:#FFFFFF; --ink:#15191F; --muted:#5C6672; --line:#E0E2DB;
+  --accent:#2A4FD6; --accent-ink:#FFFFFF; --accent-soft:#E3E9FC;
+  --good:#2C7A47; --good-soft:#E0F1E6; --warn:#9A6208; --warn-soft:#FBEFD6; --bad:#B03A2A; --bad-soft:#F9E1DC;
+  --font-display:"Bricolage Grotesque","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  --font-body:"Figtree","Avenir Next","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101318; --surface:#181C23; --ink:#ECEFF3; --muted:#9AA4B0; --line:#2A303A;
+    --accent:#8AA1FF; --accent-ink:#0E1330; --accent-soft:#222A4A;
+    --good:#6CCB8B; --good-soft:#1B2F23; --warn:#E3B055; --warn-soft:#352A14; --bad:#F08A7B; --bad-soft:#3A1F1B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101318; --surface:#181C23; --ink:#ECEFF3; --muted:#9AA4B0; --line:#2A303A;
+  --accent:#8AA1FF; --accent-ink:#0E1330; --accent-soft:#222A4A;
+  --good:#6CCB8B; --good-soft:#1B2F23; --warn:#E3B055; --warn-soft:#352A14; --bad:#F08A7B; --bad-soft:#3A1F1B;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+body{padding:calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+#app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3,p{margin:0}
+h1{font-family:var(--font-display);font-weight:700;font-size:30px;line-height:1.1;letter-spacing:-.02em;text-wrap:balance}
+h2{font-family:var(--font-display);font-weight:600;font-size:19px;line-height:1.2;text-wrap:balance}
+h3{font-family:var(--font-display);font-weight:600;font-size:15px;color:var(--muted);letter-spacing:.01em}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.date{color:var(--muted);font-size:14px;text-transform:capitalize}
+.sub{color:var(--muted);font-size:15px}
+.stack{display:flex;flex-direction:column;gap:16px}
+
+/* cartões */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;cursor:pointer}
+.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--accent)}
+.card.st-ok::before,.card.st-done::before{background:var(--good)}
+.card.st-behind::before{background:var(--warn)}
+.card.st-late::before{background:var(--bad)}
+.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.meta{color:var(--muted);font-size:14px}
+.pill{font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap;background:var(--accent-soft);color:var(--accent)}
+.pill.ok,.pill.done{background:var(--good-soft);color:var(--good)}
+.pill.behind{background:var(--warn-soft);color:var(--warn)}
+.pill.late{background:var(--bad-soft);color:var(--bad)}
+.bar{position:relative;height:10px;border-radius:99px;background:var(--line);overflow:visible}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--accent)}
+.bar b{position:absolute;top:-4px;width:3px;height:18px;border-radius:2px;background:var(--ink);transform:translateX(-1px)}
+.foot{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.foot .big{font-family:var(--font-display);font-weight:700;font-size:24px;line-height:1;letter-spacing:-.01em}
+.foot .big small{font-family:var(--font-body);font-weight:500;font-size:13px;color:var(--muted);letter-spacing:0}
+.foot .side{font-size:14px;color:var(--muted);text-align:right}
+
+/* botões */
+.btn{border:0;border-radius:12px;padding:12px 18px;font-weight:600;background:var(--accent);color:var(--accent-ink);min-height:46px}
+.btn.ghost{background:var(--accent-soft);color:var(--accent)}
+.btn.line{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.small{min-height:38px;padding:8px 14px;font-size:14px}
+.btn[disabled]{opacity:.45;cursor:default}
+.back{align-self:flex-start;background:none;border:0;color:var(--accent);font-weight:600;padding:8px 0;min-height:40px}
+.dock{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(env(safe-area-inset-bottom) + 12px);background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.dock .btn{display:block;width:100%;max-width:560px;margin:0 auto;box-shadow:0 6px 18px rgba(21,25,31,.18)}
+
+/* painéis */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hero{border-color:transparent;background:var(--accent);color:var(--accent-ink)}
+.hero .lbl{font-size:14px;opacity:.85}
+.hero .bigger{font-family:var(--font-display);font-weight:700;font-size:44px;line-height:1;letter-spacing:-.02em}
+.hero .bigger small{font-family:var(--font-body);font-weight:500;font-size:16px;opacity:.85;letter-spacing:0}
+.trio{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.trio div{background:rgba(255,255,255,.14);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.trio span{font-size:12px;opacity:.85}
+.trio b{font-size:15px;font-weight:600}
+.hero .note{font-size:14px;opacity:.92}
+.hero.done{background:var(--good);color:var(--surface)}
+.row{display:flex;gap:8px}
+.row>*{flex:1;min-width:0}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:18px;height:0;border-top:3px solid var(--accent);vertical-align:middle;margin-right:6px}
+.legend span.ideal::before{border-top:2px dashed var(--muted)}
+svg.chart{width:100%;height:auto;display:block}
+svg .grid{stroke:var(--line);stroke-width:1}
+svg .ideal{stroke:var(--muted);stroke-width:2;stroke-dasharray:5 5;fill:none}
+svg .real{stroke:var(--accent);stroke-width:3;fill:none;stroke-linejoin:round;stroke-linecap:round}
+svg .area{fill:var(--accent-soft);opacity:.7}
+svg .today{stroke:var(--ink);stroke-width:1;stroke-dasharray:2 3}
+svg .dot{fill:var(--accent);stroke:var(--surface);stroke-width:3}
+svg text{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
+
+/* formulário */
+label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+label .hint{font-weight:400;color:var(--muted);font-size:13px}
+input[type=text],input[type=date],select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:12px;min-height:46px;font-size:16px;font-weight:400}
+textarea{min-height:76px;resize:vertical}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:14px;border:1px solid var(--line)}
+.seg button{border:0;background:transparent;border-radius:10px;padding:10px;font-weight:600;color:var(--muted);min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:8px 14px;font-weight:600;font-size:14px;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.preview{background:var(--accent-soft);color:var(--accent);border-radius:12px;padding:12px;font-size:15px;font-weight:500}
+.err{color:var(--bad);font-weight:600;font-size:14px;min-height:0}
+[hidden]{display:none!important}
+
+/* lista de depósitos e marcos */
+ul.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ul.list li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+ul.list li:first-child{border-top:0}
+ul.list .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;width:40px;height:40px;border-radius:10px}
+.pos{color:var(--good);font-weight:600}.neg{color:var(--bad);font-weight:600}
+.chk{width:28px;height:28px;border-radius:9px;border:2px solid var(--line);background:var(--surface);flex:none;display:grid;place-items:center;padding:0;color:transparent;font-weight:700}
+.chk[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.ms-title{border:0;background:transparent;padding:4px 0;font-weight:600;font-size:16px;width:100%;min-height:32px;border-radius:6px}
+.ms-title:focus{background:var(--bg);outline:2px solid var(--accent)}
+li.done .ms-title{text-decoration:line-through;color:var(--muted)}
+.due{font-size:13px;color:var(--muted)}.due.over{color:var(--bad);font-weight:600}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.day{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;color:var(--muted);min-height:58px}
+.day b{font-size:16px;color:var(--ink);font-weight:600}
+.day[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#fff}
+.day[aria-pressed="true"] b{color:#fff}
+.day[disabled]{opacity:.4}
+.day.today{border-color:var(--accent);border-width:2px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.backup summary{font-weight:600;cursor:pointer;min-height:32px}
+.warn{background:var(--warn-soft);color:var(--warn);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.45}
+.sync{font-size:12px;color:var(--muted);text-align:center}
+@media (prefers-reduced-motion:no-preference){.bar i{transition:width .3s ease}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function(){
+'use strict';
+
+/*CALC-START*/
+const pad=n=>String(n).padStart(2,'0');
+const fmtD=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseD=s=>{const p=String(s).split('-').map(Number);return new Date(p[0],p[1]-1,p[2]);};
+const todayD=()=>{const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate());};
+const addDays=(d,k)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+k);
+const addMonths=(d,k)=>{const r=new Date(d.getFullYear(),d.getMonth()+k,1);const last=new Date(r.getFullYear(),r.getMonth()+1,0).getDate();r.setDate(Math.min(d.getDate(),last));return r;};
+const diffDays=(a,b)=>Math.round((b-a)/864e5);
+
+function parseMoney(v){
+  v=String(v==null?'':v).replace(/[R$\s]/g,'');
+  if(!v) return NaN;
+  if(v.indexOf(',')>=0) v=v.replace(/\./g,'').replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(v)) v=v.replace(/\./g,'');
+  const n=Number(v);
+  return isFinite(n)?n:NaN;
+}
+function saved(g){return (g.start||0)+(g.deposits||[]).reduce((s,d)=>s+d.amount,0);}
+function mcalc(g,t){
+  const sv=saved(g), tg=g.target;
+  const dl=parseD(g.deadline), cr=parseD(g.created);
+  const days=Math.max(0,diffDays(t,dl));
+  const n=days/30.4375;
+  const remaining=Math.max(0,tg-sv);
+  const r=Math.pow(1+(g.rate||0)/100,1/12)-1;
+  let pm=0, growthOnly=false;
+  if(remaining>0){
+    if(n<=0) pm=remaining;
+    else if(r<1e-9) pm=remaining/n;
+    else{
+      const f=Math.pow(1+r,n);
+      pm=(tg-sv*f)*r/(f-1);
+      if(pm<=0){pm=0;growthOnly=true;}
+    }
+  }
+  const total=Math.max(1,diffDays(cr,dl));
+  const frac=Math.min(1,Math.max(0,diffDays(cr,t)/total));
+  const start=g.start||0;
+  const expected=start+(tg-start)*frac;
+  let status;
+  if(sv>=tg) status='done';
+  else if(t>dl) status='late';
+  else status=(sv+0.005*tg>=expected)?'ok':'behind';
+  return {sv,tg,days,n,remaining,pm,pd:pm/30.4375,pw:pm*7/30.4375,expected,frac,status,pct:Math.min(1,Math.max(0,sv/tg)),growthOnly,r};
+}
+function monthsToReach(sv,tg,x,r){
+  if(sv>=tg) return 0;
+  if(r<1e-9){ if(x<=0) return Infinity; return (tg-sv)/x; }
+  const num=tg*r+x, den=sv*r+x;
+  if(den<=0||num<=0) return Infinity;
+  const v=Math.log(num/den)/Math.log(1+r);
+  return v>=0?v:0;
+}
+function weekStart(d){return addDays(d,-((d.getDay()+6)%7));}
+function countWeek(g,ws){let c=0;for(let i=0;i<7;i++){if(g.checkins.indexOf(fmtD(addDays(ws,i)))>=0)c++;}return c;}
+function streak(g,t){
+  const cr=weekStart(parseD(g.created));
+  let ws=weekStart(t), s=0;
+  if(countWeek(g,ws)>=g.perWeek) s++;
+  ws=addDays(ws,-7);
+  while(ws>=cr && countWeek(g,ws)>=g.perWeek){s++;ws=addDays(ws,-7);}
+  return s;
+}
+function hcalc(g,t){
+  const ms=g.milestones, done=ms.filter(m=>m.done).length, total=ms.length;
+  const overdue=ms.filter(m=>!m.done&&parseD(m.due)<t).length;
+  const dl=parseD(g.deadline); const days=Math.max(0,diffDays(t,dl));
+  let status;
+  if(total>0&&done===total) status='done';
+  else if(t>dl) status='late';
+  else status=overdue>0?'behind':'ok';
+  const pend=ms.filter(m=>!m.done).sort((a,b)=>a.due.localeCompare(b.due));
+  const ws=weekStart(t);
+  return {done,total,overdue,days,status,next:pend[0],weekCount:countWeek(g,ws),streak:streak(g,t),pct:total?done/total:0,ws};
+}
+function makeMilestones(created,deadline,every){
+  const cr=parseD(created), dl=parseD(deadline), out=[];
+  let i=1, due=addMonths(cr,i*every);
+  while(due<dl){ out.push({id:uid(),title:'Marco '+i,due:fmtD(due),done:false}); i++; due=addMonths(cr,i*every); }
+  out.push({id:uid(),title:'Meta final',due:fmtD(dl),done:false});
+  return out;
+}
+function uid(){return Math.random().toString(36).slice(2,9);}
+/*CALC-END*/
+
+const BRL=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const BRL0=new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+const fm=n=>Math.abs(n)>=1000?BRL0.format(n):BRL.format(n);
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const showD=s=>parseD(s).toLocaleDateString('pt-BR');
+const shortD=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+const LABEL={done:'Concluída',late:'Prazo vencido',ok:'No ritmo',behind:'Atrasada'};
+
+function dueText(g,t){
+  const days=diffDays(t,parseD(g.deadline));
+  if(days<0) return 'venceu há '+(-days)+(days===-1?' dia':' dias');
+  if(days===0) return 'vence hoje';
+  if(days<60) return 'faltam '+days+(days===1?' dia':' dias');
+  return 'faltam '+Math.round(days/30.4375)+' meses';
+}
+const bar=(pct,mark)=>'<div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct*100)+'"><i style="width:'+(pct*100).toFixed(1)+'%"></i>'+(mark!=null?'<b style="left:'+(mark*100).toFixed(1)+'%"></b>':'')+'</div>';
+
+/* ---------- estado e persistência ---------- */
+const LS_KEY='rumo-metas-v1';
+const STANDALONE=true;
+const state={goals:[],view:{name:'list'},sync:'local',cloud:'pending',dirty:false,confirmDel:null};
+function cloudOff(why){
+  ref=null; state.cloud='off'; state.detail=why||''; setSync('local');
+  if(state.view.name==='list') render(true);
+}
+let ref=null,saving=false,again=false,timer=null;
+
+function normalize(g){
+  g.deposits=Array.isArray(g.deposits)?g.deposits:[];
+  g.milestones=Array.isArray(g.milestones)?g.milestones:[];
+  g.checkins=Array.isArray(g.checkins)?g.checkins:[];
+  g.perWeek=g.perWeek||3; g.rate=g.rate||0; g.start=g.start||0; g.note=g.note||'';
+  return g;
+}
+function loadLocal(){
+  try{const raw=localStorage.getItem(LS_KEY);if(raw){const o=JSON.parse(raw);if(o&&Array.isArray(o.goals))return o.goals.map(normalize);}}catch(e){}
+  return null;
+}
+function saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify({v:1,goals:state.goals}));}catch(e){}}
+function setSync(k){
+  state.sync=k;
+  const el=$('#sync');
+  if(el) el.textContent=(k==='db'?'Suas metas ficam salvas na sua conta.':'Suas metas ficam salvas neste aparelho. Use o backup acima de vez em quando.')+(state.detail?' ('+state.detail+')':'');
+}
+function persist(){
+  state.dirty=true; saveLocal();
+  clearTimeout(timer); timer=setTimeout(flush,500);
+}
+async function flush(){
+  if(!ref) return;
+  if(saving){again=true;return;}
+  saving=true;
+  try{await ref.set({v:1,goals:state.goals});setSync('db');}catch(e){setSync('local');}
+  saving=false;
+  if(again){again=false;flush();}
+}
+function unwrap(snap){
+  if(!snap) return null;
+  if(typeof snap.data==='function') return snap.data();
+  if(snap.data&&typeof snap.data==='object') return snap.data;
+  return snap;
+}
+async function initCloud(){
+  if(STANDALONE) return;
+  try{
+    if(typeof claude==='undefined'||!claude.use) return cloudOff('página aberta fora do Claude');
+    const db=await claude.use('db');
+    if(!db) return cloudOff('armazenamento da conta indisponível');
+    const user=await claude.use('user');
+    if(!user) return cloudOff('usuário não identificado');
+    const id=await user.id();
+    ref=db.collection('data/users/'+id).doc('goals');
+    const data=unwrap(await ref.get());
+    if(data&&Array.isArray(data.goals)&&!state.dirty){
+      state.goals=data.goals.map(normalize); saveLocal(); render(true);
+    }else if(state.goals.length||state.dirty){ flush(); }
+    state.cloud='ok';
+    state.detail=data&&Array.isArray(data.goals)?data.goals.length+(data.goals.length===1?' meta lida da conta':' metas lidas da conta'):'conta conectada, nenhuma meta encontrada';
+    setSync('db');
+    if(state.view.name==='list') render(true);
+  }catch(e){cloudOff('erro ao ler a conta: '+(e&&e.message?e.message:'desconhecido'));}
+}
+
+/* ---------- telas ---------- */
+function viewList(){
+  const t=todayD();
+  const info=[...state.goals].sort((a,b)=>a.deadline.localeCompare(b.deadline)).map(g=>({g,c:g.type==='money'?mcalc(g,t):hcalc(g,t)}));
+  const att=info.filter(i=>i.c.status==='behind'||i.c.status==='late').length;
+  const dateStr=t.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
+  let h='<header><p class="date">'+esc(dateStr)+'</p><h1>Minhas metas</h1>';
+  if(info.length) h+='<p class="sub">'+info.length+(info.length===1?' meta':' metas')+(att?' · '+att+(att===1?' pede atenção':' pedem atenção'):' · tudo no ritmo')+'</p>';
+  h+='</header>';
+  if(state.cloud==='off') h+='<p class="warn" role="status"><b>Sua conta não está conectada aqui.</b> Se você já criou metas, elas estão salvas na conta e não aparecem nesta tela. Abra este link pelo Safari ou pelo app do Claude, logado na sua conta, para vê-las. Metas criadas aqui ficam só neste aparelho.</p>';
+  if(!info.length){
+    h+='<section class="empty"><h2>Comece pela meta mais importante</h2>'+
+      '<p class="sub">Escolha um prazo de 1 a 3 anos. Com dinheiro, o app calcula quanto guardar por mês e por dia. Sem dinheiro, ele divide o caminho em marcos e acompanha sua rotina da semana.</p>'+
+      '<button class="btn" data-action="new" data-type="money">Meta com dinheiro</button>'+
+      '<button class="btn ghost" data-action="new" data-type="habit">Meta sem dinheiro</button></section>';
+  }else{
+    h+='<div class="stack">'+info.map(({g,c})=>g.type==='money'?cardMoney(g,c,t):cardHabit(g,c,t)).join('')+'</div>';
+    h+='<div class="dock"><button class="btn" data-action="new" data-type="money">Nova meta</button></div>';
+  }
+  h+='<details class="panel backup"><summary>Backup e transferência</summary>'+
+    '<p class="sub">Copie seus dados neste aparelho ou navegador e cole em outro para ver as mesmas metas.</p>'+
+    '<button class="btn ghost small" data-action="copy-backup">Copiar meus dados</button>'+
+    '<label for="bk">Dados<textarea id="bk" placeholder="Cole aqui os dados copiados" autocomplete="off"></textarea></label>'+
+    '<button class="btn line small" data-action="import-backup">Importar dados</button><p class="sub" id="bk-msg" role="status"></p></details>';
+  h+='<p class="sync" id="sync"></p>';
+  return h;
+}
+function cardMoney(g,c,t){
+  return '<article class="card st-'+c.status+'" role="button" tabindex="0" data-action="open" data-id="'+g.id+'">'+
+    '<div class="card-head"><h2>'+esc(g.title)+'</h2><span class="pill '+c.status+'">'+LABEL[c.status]+'</span></div>'+
+    '<p class="meta">'+fm(c.tg)+' até '+showD(g.deadline)+' · '+dueText(g,t)+'</p>'+
+    bar(c.pct,c.status==='done'?null:c.frac===0?null:c.expected/c.tg)+
+    '<div class="foot">'+(c.status==='done'?'<span class="big">Meta alcançada</span>':
+      '<span class="big num">'+fm(c.pm)+' <small>por mês</small></span><span class="side num">'+fm(c.pd)+' por dia</span>')+'</div>'+
+    '<p class="meta num">Guardado: '+fm(c.sv)+' ('+Math.round(c.pct*100)+'%)</p></article>';
+}
+function cardHabit(g,c,t){
+  const today=fmtD(t), did=g.checkins.indexOf(today)>=0;
+  return '<article class="card st-'+c.status+'" role="button" tabindex="0" data-action="open" data-id="'+g.id+'">'+
+    '<div class="card-head"><h2>'+esc(g.title)+'</h2><span class="pill '+c.status+'">'+LABEL[c.status]+'</span></div>'+
+    '<p class="meta">Até '+showD(g.deadline)+' · '+dueText(g,t)+'</p>'+
+    bar(c.pct,null)+
+    '<p class="meta num">'+c.done+' de '+c.total+' marcos'+(c.next?' · próximo: '+esc(c.next.title)+' ('+showD(c.next.due)+')':'')+'</p>'+
+    '<div class="foot"><span class="big num">'+c.weekCount+'/'+g.perWeek+' <small>nesta semana</small></span>'+
+    '<button class="btn small '+(did?'':'ghost')+'" data-action="checkin" data-id="'+g.id+'" aria-pressed="'+did+'">'+(did?'Feito hoje':'Fiz hoje')+'</button></div></article>';
+}
+
+function chartSvg(g,c,t){
+  const W=340,H=170,L=10,R=10,T=16,B=26;
+  const cr=parseD(g.created), dl=parseD(g.deadline);
+  const span=Math.max(1,diffDays(cr,dl));
+  const x=d=>L+(W-L-R)*Math.min(1,Math.max(0,diffDays(cr,d)/span));
+  const ymax=Math.max(g.target,c.sv,1);
+  const y=v=>T+(H-T-B)*(1-Math.min(1,Math.max(0,v/ymax)));
+  let sv=g.start||0; const pts=[[x(cr),y(sv)]];
+  [...g.deposits].sort((a,b)=>a.date.localeCompare(b.date)).forEach(d=>{sv+=d.amount;pts.push([x(parseD(d.date)),y(sv)]);});
+  const td=t<cr?cr:t; pts.push([x(td),y(c.sv)]);
+  const line=pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const last=pts[pts.length-1], first=pts[0];
+  const area=line+' '+last[0].toFixed(1)+','+y(0).toFixed(1)+' '+first[0].toFixed(1)+','+y(0).toFixed(1);
+  const showToday=t>cr&&t<dl;
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfico do seu progresso em relação ao ritmo ideal">'+
+    '<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(g.target).toFixed(1)+'" y2="'+y(g.target).toFixed(1)+'"/>'+
+    '<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(0)+'" y2="'+y(0)+'"/>'+
+    '<text x="'+L+'" y="'+(y(g.target)-4).toFixed(1)+'">Meta '+esc(fm(g.target))+'</text>'+
+    '<polygon class="area" points="'+area+'"/>'+
+    '<line class="ideal" x1="'+x(cr).toFixed(1)+'" y1="'+y(g.start||0).toFixed(1)+'" x2="'+x(dl).toFixed(1)+'" y2="'+y(g.target).toFixed(1)+'"/>'+
+    (showToday?'<line class="today" x1="'+x(t).toFixed(1)+'" x2="'+x(t).toFixed(1)+'" y1="'+T+'" y2="'+y(0)+'"/>':'')+
+    '<polyline class="real" points="'+line+'"/>'+
+    '<circle class="dot" cx="'+last[0].toFixed(1)+'" cy="'+last[1].toFixed(1)+'" r="6"/>'+
+    '<text x="'+L+'" y="'+(H-8)+'">'+shortD(cr)+'</text>'+
+    '<text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end">'+shortD(dl)+'</text>'+
+    (showToday?'<text x="'+x(t).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">hoje</text>':'')+
+    '</svg>';
+}
+
+function viewDetail(){
+  const g=state.goals.find(x=>x.id===state.view.id);
+  if(!g){state.view={name:'list'};return viewList();}
+  const t=todayD();
+  return g.type==='money'?detailMoney(g,t):detailHabit(g,t);
+}
+function footerBtns(g){
+  const conf=state.confirmDel===g.id;
+  return '<div class="row"><button class="btn line" data-action="edit" data-id="'+g.id+'">Editar meta</button>'+
+    '<button class="btn danger" data-action="delete" data-id="'+g.id+'">'+(conf?'Toque de novo para excluir':'Excluir')+'</button></div>';
+}
+function detailMoney(g,t){
+  const c=mcalc(g,t);
+  const diff=c.sv-c.expected;
+  let pace;
+  if(c.status==='done') pace='Você chegou ao valor da meta.';
+  else if(c.status==='late') pace='O prazo passou e ainda faltam '+fm(c.remaining)+'. Edite a meta para definir um novo prazo.';
+  else if(Math.abs(diff)<0.5) pace='Você está exatamente no ritmo ideal de hoje.';
+  else if(diff>0) pace='Você está '+fm(diff)+' acima do ritmo ideal de hoje.';
+  else pace='Você está '+fm(-diff)+' abaixo do ritmo ideal de hoje.';
+  let h='<button class="back" data-action="back">‹ Todas as metas</button>'+
+    '<header class="stack" style="gap:8px"><div class="card-head"><h1>'+esc(g.title)+'</h1><span class="pill '+c.status+'">'+LABEL[c.status]+'</span></div>'+
+    '<p class="meta">Meta de '+fm(c.tg)+' até '+showD(g.deadline)+' · '+dueText(g,t)+'</p>'+(g.note?'<p class="sub">'+esc(g.note)+'</p>':'')+'</header>';
+  if(c.status==='done'){
+    h+='<section class="panel hero done"><p class="lbl">Resultado</p><p class="bigger num">'+fm(c.sv)+'</p><p class="note">Meta alcançada.</p></section>';
+  }else{
+    h+='<section class="panel hero"><p class="lbl">Para chegar lá, guarde</p><p class="bigger num">'+fm(c.pm)+' <small>por mês</small></p>'+
+      '<div class="trio num"><div><span>por semana</span><b>'+fm(c.pw)+'</b></div><div><span>por dia</span><b>'+fm(c.pd)+'</b></div><div><span>ainda falta</span><b>'+fm(c.remaining)+'</b></div></div>'+
+      (c.growthOnly?'<p class="note">Com o rendimento de '+String(g.rate).replace('.',',')+'% ao ano, o valor que você já tem chega à meta sozinho.</p>':
+        (g.rate>0?'<p class="note">Considera rendimento de '+String(g.rate).replace('.',',')+'% ao ano.</p>':''))+'</section>';
+  }
+  h+='<section class="panel"><h3>Seu progresso</h3>'+bar(c.pct,c.status==='done'?null:c.expected/c.tg)+
+    '<p class="num"><b>'+fm(c.sv)+'</b> de '+fm(c.tg)+' ('+Math.round(c.pct*100)+'%)</p><p class="sub">'+esc(pace)+' A marca preta na barra é o ritmo ideal.</p>'+
+    chartSvg(g,c,t)+'<div class="legend"><span>Seu progresso</span><span class="ideal">Ritmo ideal</span></div></section>';
+  h+='<section class="panel"><h3>Registrar um valor</h3><label for="dep-amt">Valor (R$)<input type="text" id="dep-amt" inputmode="decimal" placeholder="0,00" autocomplete="off"></label>'+
+    '<div class="row"><button class="btn" data-action="deposit" data-id="'+g.id+'">Guardei</button><button class="btn line" data-action="withdraw" data-id="'+g.id+'">Retirei</button></div><p class="err" id="dep-err"></p></section>';
+  if(c.status!=='done'){
+    h+='<section class="panel"><h3>E se eu guardar outro valor?</h3><label for="wi">Por mês (R$)<input type="text" id="wi" inputmode="decimal" placeholder="Ex.: 500" autocomplete="off"></label><p class="sub" id="wi-out">Digite um valor para ver quando você chega na meta.</p></section>';
+  }
+  const deps=[...g.deposits].reverse().slice(0,8);
+  h+='<section class="panel"><h3>Últimos registros</h3>'+(deps.length?'<ul class="list">'+deps.map(d=>
+    '<li><div class="grow"><span class="num '+(d.amount>=0?'pos':'neg')+'">'+(d.amount>=0?'+ ':'− ')+fm(Math.abs(d.amount))+'</span><span class="due">'+showD(d.date)+'</span></div>'+
+    '<button class="x" data-action="del-dep" data-id="'+g.id+'" data-dep="'+d.id+'" aria-label="Excluir registro">×</button></li>').join('')+'</ul>':
+    '<p class="sub">Nenhum registro ainda. O valor inicial da meta foi '+fm(g.start||0)+'.</p>')+'</section>';
+  h+=footerBtns(g);
+  return h;
+}
+function detailHabit(g,t){
+  const c=hcalc(g,t); const todayS=fmtD(t);
+  const L=['S','T','Q','Q','S','S','D'];
+  let days='';
+  for(let i=0;i<7;i++){
+    const d=addDays(c.ws,i), s=fmtD(d), on=g.checkins.indexOf(s)>=0, fut=d>t;
+    days+='<button class="day'+(s===todayS?' today':'')+'" data-action="toggle-day" data-id="'+g.id+'" data-date="'+s+'" aria-pressed="'+on+'"'+(fut?' disabled':'')+' aria-label="'+d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric'})+'">'+L[i]+'<b class="num">'+d.getDate()+'</b></button>';
+  }
+  const ms=[...g.milestones].sort((a,b)=>a.due.localeCompare(b.due));
+  let h='<button class="back" data-action="back">‹ Todas as metas</button>'+
+    '<header class="stack" style="gap:8px"><div class="card-head"><h1>'+esc(g.title)+'</h1><span class="pill '+c.status+'">'+LABEL[c.status]+'</span></div>'+
+    '<p class="meta">Até '+showD(g.deadline)+' · '+dueText(g,t)+'</p>'+(g.note?'<p class="sub">'+esc(g.note)+'</p>':'')+'</header>';
+  h+='<section class="panel"><h3>Esta semana</h3><div class="week">'+days+'</div>'+
+    '<p class="num"><b>'+c.weekCount+' de '+g.perWeek+'</b> '+(g.perWeek===1?'vez':'vezes')+' nesta semana</p>'+
+    '<p class="sub">'+(c.streak>0?'Sequência: '+c.streak+(c.streak===1?' semana':' semanas')+' cumprindo a rotina.':'Cumpra a rotina da semana para começar uma sequência.')+'</p></section>';
+  h+='<section class="panel"><h3>Marcos até a meta final</h3>'+bar(c.pct,null)+'<p class="num"><b>'+c.done+' de '+c.total+'</b> concluídos'+(c.overdue?' · <span class="neg">'+c.overdue+(c.overdue===1?' atrasado':' atrasados')+'</span>':'')+'</p>'+
+    '<ul class="list">'+ms.map(m=>{
+      const over=!m.done&&parseD(m.due)<t;
+      return '<li class="'+(m.done?'done':'')+'"><button class="chk" data-action="toggle-ms" data-id="'+g.id+'" data-ms="'+m.id+'" aria-pressed="'+m.done+'" aria-label="Marcar marco como concluído">✓</button>'+
+        '<div class="grow"><input class="ms-title" type="text" data-ms="'+m.id+'" data-id="'+g.id+'" value="'+esc(m.title)+'" aria-label="Nome do marco"><span class="due'+(over?' over':'')+'">até '+showD(m.due)+(over?' · atrasado':'')+'</span></div>'+
+        '<button class="x" data-action="del-ms" data-id="'+g.id+'" data-ms="'+m.id+'" aria-label="Excluir marco">×</button></li>';
+    }).join('')+'</ul>'+
+    '<label for="ms-new">Novo marco<input type="text" id="ms-new" placeholder="Ex.: Concluir o curso básico" autocomplete="off"></label>'+
+    '<label for="ms-due">Prazo do marco<input type="date" id="ms-due" value="'+g.deadline+'"></label>'+
+    '<button class="btn ghost" data-action="add-ms" data-id="'+g.id+'">Adicionar marco</button><p class="err" id="ms-err"></p></section>';
+  h+=footerBtns(g);
+  return h;
+}
+
+function viewForm(){
+  const v=state.view, edit=v.mode==='edit';
+  const g=edit?state.goals.find(x=>x.id===v.id):null;
+  if(edit&&!g){state.view={name:'list'};return viewList();}
+  const type=edit?g.type:v.type;
+  const dl=edit?g.deadline:fmtD(addMonths(todayD(),12));
+  const money=type==='money';
+  const numStr=n=>n?String(n).replace('.',','):'';
+  return '<button class="back" data-action="'+(edit?'open':'back')+'" data-id="'+(edit?g.id:'')+'">‹ Voltar</button>'+
+    '<header><h1>'+(edit?'Editar meta':'Nova meta')+'</h1></header>'+
+    '<form class="panel" id="goal-form" novalidate>'+
+    (edit?'':'<div class="seg" role="group" aria-label="Tipo de meta"><button type="button" data-action="set-type" data-type="money" aria-pressed="'+money+'">Com dinheiro</button><button type="button" data-action="set-type" data-type="habit" aria-pressed="'+!money+'">Sem dinheiro</button></div>')+
+    '<label for="f-title">Nome da meta<input type="text" id="f-title" value="'+esc(edit?g.title:'')+'" autocomplete="off"></label>'+
+    '<div class="stack" style="gap:8px"><span style="font-size:14px;font-weight:600">Prazo</span>'+
+      '<div class="chips"><button type="button" class="chip" data-action="chip" data-m="12">1 ano</button><button type="button" class="chip" data-action="chip" data-m="24">2 anos</button><button type="button" class="chip" data-action="chip" data-m="36">3 anos</button></div>'+
+      '<input type="date" id="f-deadline" aria-label="Data do prazo" value="'+dl+'"></div>'+
+    '<div id="g-money" '+(money?'':'hidden')+' class="stack">'+
+      '<label for="f-target">Quanto quero juntar (R$)<input type="text" id="f-target" inputmode="decimal" placeholder="Ex.: 20.000" autocomplete="off" value="'+(edit&&g.type==='money'?numStr(g.target):'')+'"></label>'+
+      (edit?'':'<label for="f-start">Quanto já tenho (R$)<input type="text" id="f-start" inputmode="decimal" placeholder="0" autocomplete="off"></label>')+
+      '<label for="f-rate">Rendimento esperado (% ao ano)<span class="hint">Opcional. Deixe vazio se vai apenas guardar o dinheiro.</span><input type="text" id="f-rate" inputmode="decimal" placeholder="Ex.: 10" autocomplete="off" value="'+(edit&&g.type==='money'?numStr(g.rate):'')+'"></label>'+
+      '<p class="preview" id="preview" aria-live="polite"></p></div>'+
+    '<div id="g-habit" '+(money?'hidden':'')+' class="stack">'+
+      '<label for="f-per">Quantas vezes por semana?<select id="f-per">'+[1,2,3,4,5,6,7].map(n=>'<option value="'+n+'"'+((edit&&g.type==='habit'?g.perWeek:3)===n?' selected':'')+'>'+n+(n===1?' vez':' vezes')+' por semana</option>').join('')+'</select></label>'+
+      (edit?'':'<label for="f-int">Marcos de acompanhamento<select id="f-int"><option value="3">A cada 3 meses</option><option value="6">A cada 6 meses</option></select></label>')+
+    '</div>'+
+    '<label for="f-note">Por que essa meta importa?<span class="hint">Opcional. Aparece no topo da meta.</span><textarea id="f-note">'+esc(edit?g.note:'')+'</textarea></label>'+
+    '<p class="err" id="f-err" role="alert"></p>'+
+    '<button type="submit" class="btn" data-action="save-goal">'+(edit?'Salvar alterações':'Criar meta')+'</button></form>';
+}
+
+/* ---------- renderização ---------- */
+function render(keep){
+  const y=window.scrollY, v=state.view;
+  const app=$('#app');
+  app.innerHTML=v.name==='list'?viewList():v.name==='detail'?viewDetail():viewForm();
+  setSync(state.sync);
+  if(v.name==='form') syncForm();
+  window.scrollTo(0,keep?y:0);
+}
+function syncForm(){
+  const v=state.view, type=v.mode==='edit'?(state.goals.find(x=>x.id===v.id)||{}).type:v.type;
+  const t=$('#f-title'); if(t) t.placeholder=type==='money'?'Ex.: Reserva de emergência':'Ex.: Falar inglês com fluência';
+  markChips(); updatePreview();
+}
+function markChips(){
+  const d=$('#f-deadline'); if(!d) return;
+  const t=todayD();
+  document.querySelectorAll('.chip').forEach(b=>{
+    b.setAttribute('aria-pressed',String(d.value===fmtD(addMonths(t,Number(b.dataset.m)))));
+  });
+}
+function updatePreview(){
+  const el=$('#preview'); if(!el) return;
+  const target=parseMoney($('#f-target').value), startEl=$('#f-start');
+  const start=startEl?(parseMoney(startEl.value)||0):((state.goals.find(x=>x.id===state.view.id)||{}).start||0);
+  const rate=parseMoney($('#f-rate').value)||0, dl=$('#f-deadline').value;
+  if(!(target>0)||!dl||parseD(dl)<=todayD()){el.textContent='Informe o valor e o prazo para ver quanto guardar.';return;}
+  const g={created:fmtD(todayD()),deadline:dl,target:target,start:start,rate:rate,deposits:[]};
+  const c=mcalc(g,todayD());
+  el.textContent=c.pm>0?'Você precisa guardar '+fm(c.pm)+' por mês, ou '+fm(c.pd)+' por dia.':'Com esse valor inicial você já chega lá.';
+}
+
+/* ---------- ações ---------- */
+function getGoal(id){return state.goals.find(g=>g.id===id);}
+function go(view,keep){state.view=view;state.confirmDel=null;render(keep);}
+function setErr(id,msg){const e=$('#'+id);if(e)e.textContent=msg;}
+
+function saveForm(){
+  const v=state.view, edit=v.mode==='edit', old=edit?getGoal(v.id):null;
+  const type=edit?old.type:v.type;
+  const title=$('#f-title').value.trim(), deadline=$('#f-deadline').value, note=$('#f-note').value.trim();
+  if(!title) return setErr('f-err','Dê um nome para a meta.');
+  if(!deadline) return setErr('f-err','Escolha o prazo.');
+  if(!edit&&parseD(deadline)<=todayD()) return setErr('f-err','Escolha um prazo depois de hoje.');
+  let g;
+  if(type==='money'){
+    const target=parseMoney($('#f-target').value);
+    const startEl=$('#f-start'), start=startEl?(parseMoney(startEl.value)||0):(old.start||0);
+    const rate=parseMoney($('#f-rate').value)||0;
+    if(!(target>0)) return setErr('f-err','Informe quanto você quer juntar.');
+    if(!edit&&start>=target) return setErr('f-err','O valor inicial precisa ser menor que a meta.');
+    if(rate<0||rate>100) return setErr('f-err','O rendimento deve ficar entre 0% e 100% ao ano.');
+    if(edit){Object.assign(old,{title,deadline,note,target,rate});g=old;}
+    else{g=normalize({id:uid(),type:'money',title,created:fmtD(todayD()),deadline,note,target,start,rate});state.goals.push(g);}
+  }else{
+    const perWeek=Number($('#f-per').value)||3;
+    if(edit){Object.assign(old,{title,deadline,note,perWeek});g=old;}
+    else{
+      const every=Number($('#f-int').value)||3, created=fmtD(todayD());
+      g=normalize({id:uid(),type:'habit',title,created,deadline,note,perWeek,milestones:makeMilestones(created,deadline,every)});
+      state.goals.push(g);
+    }
+  }
+  persist(); go({name:'detail',id:g.id});
+}
+
+document.addEventListener('submit',e=>{e.preventDefault();saveForm();});
+
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-action]'); if(!el) return;
+  const a=el.dataset.action, id=el.dataset.id, g=id?getGoal(id):null;
+  if(a==='new') return go({name:'form',mode:'new',type:el.dataset.type||'money'});
+  if(a==='open') return go({name:'detail',id});
+  if(a==='back') return go({name:'list'});
+  if(a==='edit') return go({name:'form',mode:'edit',id});
+  if(a==='set-type'){
+    state.view.type=el.dataset.type;
+    document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b===el)));
+    $('#g-money').hidden=el.dataset.type!=='money'; $('#g-habit').hidden=el.dataset.type==='money';
+    return syncForm();
+  }
+  if(a==='chip'){$('#f-deadline').value=fmtD(addMonths(todayD(),Number(el.dataset.m)));markChips();return updatePreview();}
+  if(a==='save-goal') return; /* o submit cuida disso */
+  if(a==='copy-backup'){
+    const text=JSON.stringify({v:1,goals:state.goals}), box=$('#bk'), msg=$('#bk-msg');
+    box.value=text;
+    let ok=false;
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(text).then(()=>{msg.textContent='Dados copiados. Cole no outro aparelho em "Importar dados".';},()=>{box.select();msg.textContent='Não consegui copiar sozinho. Segure o texto acima, toque em Selecionar tudo e depois em Copiar.';}); ok=true; } }catch(err){}
+    if(!ok){box.select();msg.textContent='Segure o texto acima, toque em Selecionar tudo e depois em Copiar.';}
+    return;
+  }
+  if(a==='import-backup'){
+    const msg=$('#bk-msg'); let data;
+    try{data=JSON.parse($('#bk').value.trim());}catch(err){msg.textContent='Esse texto não é um backup válido. Copie de novo no outro aparelho.';return;}
+    const list=data&&Array.isArray(data.goals)?data.goals:null;
+    if(!list||!list.length){msg.textContent='Não encontrei metas nesse texto.';return;}
+    const good=list.filter(x=>x&&x.id&&x.title&&x.deadline&&x.created&&(x.type==='money'||x.type==='habit')).map(normalize);
+    if(!good.length){msg.textContent='Não encontrei metas válidas nesse texto.';return;}
+    good.forEach(n=>{const i=state.goals.findIndex(x=>x.id===n.id);if(i>=0)state.goals[i]=n;else state.goals.push(n);});
+    persist(); return render();
+  }
+  if(!g) return;
+  if(a==='checkin'){
+    const s=fmtD(todayD()), i=g.checkins.indexOf(s);
+    if(i>=0) g.checkins.splice(i,1); else g.checkins.push(s);
+    persist(); return render(true);
+  }
+  if(a==='toggle-day'){
+    const s=el.dataset.date, i=g.checkins.indexOf(s);
+    if(i>=0) g.checkins.splice(i,1); else g.checkins.push(s);
+    persist(); return render(true);
+  }
+  if(a==='deposit'||a==='withdraw'){
+    const n=parseMoney($('#dep-amt').value);
+    if(!(n>0)) return setErr('dep-err','Digite um valor maior que zero.');
+    g.deposits.push({id:uid(),date:fmtD(todayD()),amount:a==='deposit'?n:-n});
+    persist(); return render(true);
+  }
+  if(a==='del-dep'){g.deposits=g.deposits.filter(d=>d.id!==el.dataset.dep);persist();return render(true);}
+  if(a==='toggle-ms'){const m=g.milestones.find(x=>x.id===el.dataset.ms);if(m){m.done=!m.done;persist();render(true);}return;}
+  if(a==='del-ms'){g.milestones=g.milestones.filter(x=>x.id!==el.dataset.ms);persist();return render(true);}
+  if(a==='add-ms'){
+    const title=$('#ms-new').value.trim(), due=$('#ms-due').value;
+    if(!title) return setErr('ms-err','Dê um nome para o marco.');
+    if(!due) return setErr('ms-err','Escolha o prazo do marco.');
+    g.milestones.push({id:uid(),title,due,done:false});
+    persist(); return render(true);
+  }
+  if(a==='delete'){
+    if(state.confirmDel!==g.id){state.confirmDel=g.id;return render(true);}
+    state.goals=state.goals.filter(x=>x.id!==g.id);persist();return go({name:'list'});
+  }
+});
+document.addEventListener('keydown',e=>{
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('article.card')){e.preventDefault();e.target.click();}
+});
+document.addEventListener('input',e=>{
+  const id=e.target.id;
+  if(['f-target','f-start','f-rate','f-deadline'].indexOf(id)>=0){updatePreview();if(id==='f-deadline')markChips();}
+  if(id==='wi'){
+    const g=getGoal(state.view.id), out=$('#wi-out'); if(!g||!out) return;
+    const x=parseMoney(e.target.value);
+    if(!(x>0)){out.textContent='Digite um valor para ver quando você chega na meta.';return;}
+    const t=todayD(), c=mcalc(g,t);
+    const m=monthsToReach(c.sv,c.tg,x,c.r);
+    if(!isFinite(m)||m>1200){out.textContent='Nesse ritmo a meta não é alcançada.';return;}
+    const reach=addDays(t,Math.ceil(m*30.4375));
+    const delta=diffDays(reach,parseD(g.deadline));
+    const when=reach.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    const mm=Math.ceil(m);
+    out.textContent='Guardando '+fm(x)+' por mês você chega em '+when+' ('+mm+(mm===1?' mês':' meses')+'). '+
+      (Math.abs(delta)<15?'Isso é praticamente no prazo.':delta>0?'Isso é cerca de '+Math.round(delta/30.4375)+' meses antes do prazo.':'Isso é cerca de '+Math.round(-delta/30.4375)+' meses depois do prazo.');
+  }
+});
+document.addEventListener('change',e=>{
+  if(e.target.classList&&e.target.classList.contains('ms-title')){
+    const g=getGoal(e.target.dataset.id); if(!g) return;
+    const m=g.milestones.find(x=>x.id===e.target.dataset.ms); if(!m) return;
+    m.title=e.target.value.trim()||m.title; e.target.value=m.title; persist();
+  }
+});
+
+/* ---------- início ---------- */
+const local=loadLocal(); if(local) state.goals=local;
+render();
+initCloud();
+})();
+</script>
+</body>
+</html>
